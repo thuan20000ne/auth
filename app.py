@@ -30,17 +30,12 @@ ADMIN_USER = "admin"
 ADMIN_PASS = "123"
 OWNER = "Thuận"
 
-# ================= KEY GEN =================
+# ================= KEY =================
 def gen_key(prefix):
     return prefix + "-" + ''.join(random.choices(string.ascii_uppercase + string.digits, k=10))
 
-# ================= TIME =================
 def add_time(days=0, hours=0, minutes=0):
-    return datetime.datetime.now() + datetime.timedelta(
-        days=days,
-        hours=hours,
-        minutes=minutes
-    )
+    return datetime.datetime.now() + datetime.timedelta(days=days, hours=hours, minutes=minutes)
 
 # ================= STATS =================
 def get_stats():
@@ -63,11 +58,11 @@ def get_stats():
 LOGIN = """
 <body style="margin:0;background:black;color:white;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;">
 <div style="background:rgba(255,255,255,0.05);padding:40px;border-radius:20px;backdrop-filter:blur(15px);box-shadow:0 0 40px #00f0ff33;">
-<h2 style="color:#00f0ff;text-align:center;">🌌 SPACE LOGIN</h2>
+<h2 style="color:#00f0ff;text-align:center;text-shadow:0 0 10px #00f0ff;">🌌 SPACE LOGIN</h2>
 <form method="POST">
 <input name="user" placeholder="Username" style="width:100%;padding:10px;margin:5px;"><br>
 <input name="pass" type="password" placeholder="Password" style="width:100%;padding:10px;margin:5px;"><br>
-<button style="width:100%;padding:10px;background:#00f0ff;border:none;">LOGIN</button>
+<button style="width:100%;padding:10px;background:#00f0ff;border:none;box-shadow:0 0 10px #00f0ff;">LOGIN</button>
 </form>
 </div>
 </body>
@@ -78,7 +73,7 @@ PANEL = """
 <!DOCTYPE html>
 <html>
 <head>
-<title>SPACE AUTH</title>
+<title>SPACE SAAS</title>
 
 <style>
 body {
@@ -86,48 +81,61 @@ body {
     font-family: Arial;
     background: radial-gradient(circle at top,#050816,#000);
     color:white;
+    overflow:hidden;
 }
 
-.stars {
+/* PARTICLES */
+canvas {
     position:fixed;
-    width:100%;
-    height:100%;
-    background: radial-gradient(1px 1px at 20px 30px,#fff,transparent),
-                radial-gradient(1px 1px at 120px 80px,#0ff,transparent);
-    animation: move 80s linear infinite;
+    top:0;
+    left:0;
+    z-index:0;
 }
 
-@keyframes move {
-    from {transform:translateY(0);}
-    to {transform:translateY(-2000px);}
+/* TITLE GLOW */
+.title {
+    color:#00f0ff;
+    text-shadow:0 0 10px #00f0ff,0 0 20px #0066ff;
 }
 
+/* SIDEBAR */
 .sidebar {
     position:fixed;
     width:240px;
     height:100vh;
-    background:rgba(10,15,40,0.7);
+    background:rgba(10,15,40,0.6);
     backdrop-filter:blur(15px);
     padding:20px;
+    border-right:1px solid #00f0ff33;
+    z-index:2;
 }
 
-.sidebar h2 {color:#00f0ff;}
+.sidebar h2 {
+    color:#00f0ff;
+    text-shadow:0 0 10px #00f0ff;
+}
 
 .sidebar a {
     display:block;
     color:white;
     padding:10px;
-    text-decoration:none;
     margin-top:10px;
+    text-decoration:none;
 }
 
-.sidebar a:hover {background:#00f0ff33;}
+.sidebar a:hover {
+    background:#00f0ff33;
+}
 
+/* MAIN */
 .main {
     margin-left:260px;
     padding:20px;
+    position:relative;
+    z-index:2;
 }
 
+/* CARD */
 .card {
     display:inline-block;
     padding:15px;
@@ -137,8 +145,16 @@ body {
     background:rgba(255,255,255,0.05);
     border-radius:14px;
     border:1px solid #00f0ff33;
+    box-shadow:0 0 15px #00f0ff22;
+    transition:0.3s;
 }
 
+.card:hover {
+    transform:scale(1.05);
+    box-shadow:0 0 25px #00f0ff55;
+}
+
+/* INPUT */
 input {
     padding:10px;
     margin:5px;
@@ -148,14 +164,23 @@ input {
     color:white;
 }
 
+/* BUTTON */
 button {
     padding:10px 15px;
     background:linear-gradient(90deg,#00f0ff,#0066ff);
     border:none;
-    border-radius:8px;
+    border-radius:10px;
     cursor:pointer;
+    box-shadow:0 0 10px #00f0ff55;
+    transition:0.3s;
 }
 
+button:hover {
+    box-shadow:0 0 20px #00f0ff,0 0 40px #0066ff;
+    transform:translateY(-2px);
+}
+
+/* TABLE */
 table {
     width:100%;
     margin-top:20px;
@@ -163,18 +188,28 @@ table {
     background:rgba(255,255,255,0.03);
 }
 
-th {background:#00f0ff22;padding:10px;}
-td {padding:10px;border-bottom:1px solid #222;}
+th {
+    background:#00f0ff22;
+    padding:10px;
+    text-shadow:0 0 5px #00f0ff;
+}
 
-.del {color:red;text-decoration:none;}
-.title {color:#00f0ff;font-size:24px;}
+td {
+    padding:10px;
+    border-bottom:1px solid #222;
+}
+
+.del {
+    color:red;
+    text-decoration:none;
+    font-weight:bold;
+}
 </style>
-
 </head>
 
 <body>
 
-<div class="stars"></div>
+<canvas id="space"></canvas>
 
 <div class="sidebar">
 <h2>🌌 {{owner}}</h2>
@@ -184,7 +219,7 @@ td {padding:10px;border-bottom:1px solid #222;}
 
 <div class="main">
 
-<div class="title">🚀 SPACE AUTH SYSTEM</div>
+<h1 class="title">🚀 SPACE SAAS AUTH SYSTEM</h1>
 
 <div class="card">TOTAL<br>{{stats[0]}}</div>
 <div class="card">USED<br>{{stats[1]}}</div>
@@ -228,6 +263,48 @@ td {padding:10px;border-bottom:1px solid #222;}
 
 </div>
 
+<script>
+// 🌌 PARTICLES
+const canvas = document.getElementById("space");
+const ctx = canvas.getContext("2d");
+
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+let particles = [];
+
+for(let i=0;i<120;i++){
+    particles.push({
+        x:Math.random()*canvas.width,
+        y:Math.random()*canvas.height,
+        r:Math.random()*2,
+        dx:(Math.random()-0.5)*0.5,
+        dy:(Math.random()-0.5)*0.5
+    });
+}
+
+function animate(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+
+    for(let p of particles){
+        ctx.fillStyle="rgba(0,240,255,0.8)";
+        ctx.beginPath();
+        ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+        ctx.fill();
+
+        p.x+=p.dx;
+        p.y+=p.dy;
+
+        if(p.x<0||p.x>canvas.width) p.dx*=-1;
+        if(p.y<0||p.y>canvas.height) p.dy*=-1;
+    }
+
+    requestAnimationFrame(animate);
+}
+
+animate();
+</script>
+
 </body>
 </html>
 """
@@ -251,7 +328,6 @@ def panel():
     c = conn.cursor()
 
     q = request.args.get("q")
-
     if q:
         c.execute("SELECT * FROM keys WHERE key LIKE ?", ('%'+q+'%',))
     else:
@@ -264,13 +340,13 @@ def panel():
 
     return render_template_string(PANEL, keys=keys, stats=stats, owner=OWNER)
 
-# ================= CREATE KEY =================
+# ================= CREATE =================
 @app.route("/create", methods=["POST"])
 def create():
     if not session.get("admin"):
         return redirect("/")
 
-    prefix = request.form.get("prefix")
+    prefix = request.form.get("prefix") or "KEY"
     days = int(request.form.get("days") or 0)
     hours = int(request.form.get("hours") or 0)
     minutes = int(request.form.get("minutes") or 0)
