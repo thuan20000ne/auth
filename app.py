@@ -28,12 +28,19 @@ init_db()
 # ================= ADMIN =================
 ADMIN_USER = "admin"
 ADMIN_PASS = "123"
-
 OWNER = "Thuận"
 
 # ================= KEY GEN =================
 def gen_key(prefix):
     return prefix + "-" + ''.join(random.choices(string.ascii_uppercase + string.digits, k=10))
+
+# ================= TIME =================
+def add_time(days=0, hours=0, minutes=0):
+    return datetime.datetime.now() + datetime.timedelta(
+        days=days,
+        hours=hours,
+        minutes=minutes
+    )
 
 # ================= STATS =================
 def get_stats():
@@ -52,7 +59,7 @@ def get_stats():
     conn.close()
     return total, used, free
 
-# ================= LOGIN =================
+# ================= LOGIN UI =================
 LOGIN = """
 <body style="margin:0;background:black;color:white;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;">
 <div style="background:rgba(255,255,255,0.05);padding:40px;border-radius:20px;backdrop-filter:blur(15px);box-shadow:0 0 40px #00f0ff33;">
@@ -66,12 +73,12 @@ LOGIN = """
 </body>
 """
 
-# ================= PANEL PRO =================
+# ================= DASHBOARD =================
 PANEL = """
 <!DOCTYPE html>
 <html>
 <head>
-<title>SPACE SAAS</title>
+<title>SPACE AUTH</title>
 
 <style>
 body {
@@ -81,14 +88,12 @@ body {
     color:white;
 }
 
-/* STAR */
 .stars {
     position:fixed;
     width:100%;
     height:100%;
     background: radial-gradient(1px 1px at 20px 30px,#fff,transparent),
-                radial-gradient(1px 1px at 100px 80px,#0ff,transparent),
-                radial-gradient(1px 1px at 200px 150px,#fff,transparent);
+                radial-gradient(1px 1px at 120px 80px,#0ff,transparent);
     animation: move 80s linear infinite;
 }
 
@@ -97,7 +102,6 @@ body {
     to {transform:translateY(-2000px);}
 }
 
-/* SIDEBAR */
 .sidebar {
     position:fixed;
     width:240px;
@@ -107,42 +111,34 @@ body {
     padding:20px;
 }
 
-.sidebar h2 {
-    color:#00f0ff;
-}
+.sidebar h2 {color:#00f0ff;}
 
 .sidebar a {
     display:block;
     color:white;
     padding:10px;
-    margin-top:10px;
     text-decoration:none;
-    border-radius:10px;
+    margin-top:10px;
 }
 
-.sidebar a:hover {
-    background:#00f0ff33;
-}
+.sidebar a:hover {background:#00f0ff33;}
 
-/* MAIN */
 .main {
     margin-left:260px;
     padding:20px;
 }
 
-/* CARD */
 .card {
     display:inline-block;
-    background:rgba(255,255,255,0.05);
     padding:15px;
     margin:10px;
-    border-radius:14px;
     width:160px;
     text-align:center;
+    background:rgba(255,255,255,0.05);
+    border-radius:14px;
     border:1px solid #00f0ff33;
 }
 
-/* INPUT */
 input {
     padding:10px;
     margin:5px;
@@ -160,7 +156,6 @@ button {
     cursor:pointer;
 }
 
-/* TABLE */
 table {
     width:100%;
     margin-top:20px;
@@ -168,27 +163,11 @@ table {
     background:rgba(255,255,255,0.03);
 }
 
-th {
-    background:#00f0ff22;
-    padding:10px;
-}
+th {background:#00f0ff22;padding:10px;}
+td {padding:10px;border-bottom:1px solid #222;}
 
-td {
-    padding:10px;
-    border-bottom:1px solid #222;
-}
-
-/* DELETE BUTTON */
-.del {
-    color:red;
-    text-decoration:none;
-    font-weight:bold;
-}
-
-.header {
-    color:#00f0ff;
-    font-size:26px;
-}
+.del {color:red;text-decoration:none;}
+.title {color:#00f0ff;font-size:24px;}
 </style>
 
 </head>
@@ -205,7 +184,7 @@ td {
 
 <div class="main">
 
-<div class="header">🚀 SPACE SAAS LICENSE SYSTEM</div>
+<div class="title">🚀 SPACE AUTH SYSTEM</div>
 
 <div class="card">TOTAL<br>{{stats[0]}}</div>
 <div class="card">USED<br>{{stats[1]}}</div>
@@ -215,6 +194,8 @@ td {
 <form method="POST" action="/create">
 <input name="prefix" placeholder="Prefix">
 <input name="days" placeholder="Days">
+<input name="hours" placeholder="Hours">
+<input name="minutes" placeholder="Minutes">
 <button>Create</button>
 </form>
 
@@ -251,7 +232,7 @@ td {
 </html>
 """
 
-# ================= LOGIN WEB =================
+# ================= LOGIN =================
 @app.route("/", methods=["GET","POST"])
 def login():
     if request.method == "POST":
@@ -283,17 +264,19 @@ def panel():
 
     return render_template_string(PANEL, keys=keys, stats=stats, owner=OWNER)
 
-# ================= CREATE =================
+# ================= CREATE KEY =================
 @app.route("/create", methods=["POST"])
 def create():
     if not session.get("admin"):
         return redirect("/")
 
     prefix = request.form.get("prefix")
-    days = int(request.form.get("days") or 1)
+    days = int(request.form.get("days") or 0)
+    hours = int(request.form.get("hours") or 0)
+    minutes = int(request.form.get("minutes") or 0)
 
     key = gen_key(prefix)
-    expiry = (datetime.datetime.now() + datetime.timedelta(days=days)).strftime("%Y-%m-%d")
+    expiry = add_time(days, hours, minutes).strftime("%Y-%m-%d %H:%M:%S")
 
     conn = sqlite3.connect(DB)
     c = conn.cursor()
@@ -337,7 +320,7 @@ def api_login():
 
     expiry, saved = row
 
-    if datetime.datetime.strptime(expiry, "%Y-%m-%d") < datetime.datetime.now():
+    if datetime.datetime.strptime(expiry, "%Y-%m-%d %H:%M:%S") < datetime.datetime.now():
         return {"status":"error","msg":"Expired"}
 
     if saved and saved != hwid:
