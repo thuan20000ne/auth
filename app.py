@@ -29,9 +29,17 @@ init_db()
 ADMIN_USER = "admin"
 ADMIN_PASS = "123"
 
-# ================= GEN KEY =================
+# ================= KEY GEN =================
 def gen_key(prefix):
     return prefix + "-" + ''.join(random.choices(string.ascii_uppercase + string.digits, k=10))
+
+# ================= TIME CALC (PRO) =================
+def add_time(minutes=0, hours=0, days=0):
+    return datetime.datetime.now() + datetime.timedelta(
+        minutes=minutes,
+        hours=hours,
+        days=days
+    )
 
 # ================= STATS =================
 def get_stats():
@@ -50,60 +58,182 @@ def get_stats():
     conn.close()
     return total, used, free
 
-# ================= LOGIN PAGE =================
+# ================= LOGIN PAGE (SAAS STYLE) =================
 LOGIN = """
-<body style="background:#050816;color:white;font-family:sans-serif;text-align:center;margin-top:120px;">
-<h2>🔐 ADMIN LOGIN</h2>
+<body style="margin:0;background:black;color:white;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;overflow:hidden;">
+
+<div style="position:absolute;width:100%;height:100%;background:radial-gradient(circle at top,#0ff2,#000);"></div>
+
+<div style="z-index:2;background:rgba(255,255,255,0.05);padding:40px;border-radius:20px;backdrop-filter:blur(10px);box-shadow:0 0 30px #00f0ff33;">
+<h2 style="text-align:center;color:#00f0ff;">🌌 SPACE LOGIN</h2>
+
 <form method="POST">
-<input name="user" placeholder="Username"><br><br>
-<input name="pass" type="password" placeholder="Password"><br><br>
-<button>Login</button>
+<input name="user" placeholder="Username" style="padding:10px;width:100%;margin:5px;"><br>
+<input name="pass" type="password" placeholder="Password" style="padding:10px;width:100%;margin:5px;"><br>
+<button style="width:100%;padding:10px;background:#00f0ff;border:none;border-radius:10px;">LOGIN</button>
 </form>
+
+</div>
+
 </body>
 """
 
-# ================= PANEL =================
+# ================= DASHBOARD SAAS =================
 PANEL = """
-<body style="background:#050816;color:white;font-family:sans-serif;">
+<!DOCTYPE html>
+<html>
+<head>
+<title>Space SaaS Panel</title>
 
-<h2>🌌 AUTH DASHBOARD</h2>
+<style>
+body {
+    margin:0;
+    font-family: Arial;
+    background: radial-gradient(circle at top, #050816, #000);
+    color:white;
+}
 
-<a href="/logout" style="color:red;">Logout</a>
+/* SPACE EFFECT */
+.stars {
+    position:fixed;
+    width:100%;
+    height:100%;
+    background: radial-gradient(1px 1px at 20px 30px, #fff, transparent),
+                radial-gradient(1px 1px at 120px 80px, #0ff, transparent),
+                radial-gradient(1px 1px at 200px 200px, #fff, transparent);
+    animation: move 80s linear infinite;
+    z-index:0;
+}
 
-<hr>
+@keyframes move {
+    from {transform:translateY(0);}
+    to {transform:translateY(-2000px);}
+}
 
-<div>
-<h3>Stats</h3>
-Total: {{stats[0]}} |
-Used: {{stats[1]}} |
-Free: {{stats[2]}}
+/* SIDEBAR */
+.sidebar {
+    position:fixed;
+    width:240px;
+    height:100vh;
+    background:rgba(10,15,40,0.7);
+    backdrop-filter:blur(12px);
+    padding:20px;
+    z-index:2;
+}
+
+.sidebar h2 {
+    color:#00f0ff;
+}
+
+.sidebar a {
+    display:block;
+    color:white;
+    padding:10px;
+    margin-top:10px;
+    text-decoration:none;
+}
+
+.sidebar a:hover {
+    background:#00f0ff33;
+}
+
+/* MAIN */
+.main {
+    margin-left:260px;
+    padding:20px;
+    position:relative;
+    z-index:2;
+}
+
+h1 {
+    color:#00f0ff;
+}
+
+/* CARD */
+.card {
+    display:inline-block;
+    background:rgba(255,255,255,0.05);
+    padding:15px;
+    margin:10px;
+    border-radius:14px;
+    width:160px;
+    text-align:center;
+}
+
+/* INPUT */
+input {
+    padding:10px;
+    margin:5px;
+    border:none;
+    border-radius:8px;
+    background:#111827;
+    color:white;
+}
+
+button {
+    padding:10px 15px;
+    background:linear-gradient(90deg,#00f0ff,#0066ff);
+    border:none;
+    border-radius:8px;
+    cursor:pointer;
+}
+
+/* TABLE */
+table {
+    width:100%;
+    margin-top:20px;
+    border-collapse:collapse;
+    background:rgba(255,255,255,0.03);
+}
+
+th {
+    background:#00f0ff22;
+    padding:10px;
+}
+
+td {
+    padding:10px;
+    border-bottom:1px solid #222;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="stars"></div>
+
+<div class="sidebar">
+<h2>🌌 SAAS PANEL</h2>
+<a href="/panel">Dashboard</a>
+<a href="/logout">Logout</a>
 </div>
 
-<hr>
+<div class="main">
 
-<h3>Create Key</h3>
+<h1>🚀 SPACE LICENSE SYSTEM</h1>
+
+<div class="card">TOTAL<br>{{stats[0]}}</div>
+<div class="card">USED<br>{{stats[1]}}</div>
+<div class="card">FREE<br>{{stats[2]}}</div>
+
+<h2>➕ Create Key</h2>
 <form method="POST" action="/create">
 <input name="prefix" placeholder="Prefix">
 <input name="days" placeholder="Days">
+<input name="hours" placeholder="Hours">
+<input name="minutes" placeholder="Minutes">
 <button>Create</button>
 </form>
 
-<hr>
+<h2>🔑 Keys</h2>
 
-<h3>Search</h3>
-<form method="GET">
-<input name="q" placeholder="Search key">
-<button>Search</button>
-</form>
-
-<hr>
-
-<table border="1" cellpadding="5">
+<table>
 <tr>
 <th>Key</th>
 <th>Expiry</th>
 <th>HWID</th>
-<th>Action</th>
 </tr>
 
 {% for k in keys %}
@@ -111,13 +241,15 @@ Free: {{stats[2]}}
 <td>{{k[0]}}</td>
 <td>{{k[1]}}</td>
 <td>{{k[2]}}</td>
-<td><a href="/delete?key={{k[0]}}" style="color:red;">Delete</a></td>
 </tr>
 {% endfor %}
 
 </table>
 
+</div>
+
 </body>
+</html>
 """
 
 # ================= LOGIN WEB =================
@@ -127,10 +259,9 @@ def login():
         if request.form.get("user") == ADMIN_USER and request.form.get("pass") == ADMIN_PASS:
             session["admin"] = True
             return redirect("/panel")
-
     return LOGIN
 
-# ================= PANEL (PROTECTED) =================
+# ================= PANEL =================
 @app.route("/panel")
 def panel():
     if not session.get("admin"):
@@ -138,14 +269,7 @@ def panel():
 
     conn = sqlite3.connect(DB)
     c = conn.cursor()
-
-    q = request.args.get("q")
-
-    if q:
-        c.execute("SELECT * FROM keys WHERE key LIKE ?", ('%'+q+'%',))
-    else:
-        c.execute("SELECT * FROM keys")
-
+    c.execute("SELECT * FROM keys")
     keys = c.fetchall()
     conn.close()
 
@@ -153,43 +277,24 @@ def panel():
 
     return render_template_string(PANEL, keys=keys, stats=stats)
 
-# ================= LOGOUT =================
-@app.route("/logout")
-def logout():
-    session.clear()
-    return redirect("/")
-
-# ================= CREATE KEY =================
+# ================= CREATE KEY (TIME PRO) =================
 @app.route("/create", methods=["POST"])
 def create():
     if not session.get("admin"):
         return redirect("/")
 
     prefix = request.form.get("prefix")
-    days = int(request.form.get("days", 1))
+    days = int(request.form.get("days") or 0)
+    hours = int(request.form.get("hours") or 0)
+    minutes = int(request.form.get("minutes") or 0)
 
     key = gen_key(prefix)
-    expiry = (datetime.datetime.now() + datetime.timedelta(days=days)).strftime("%Y-%m-%d")
+
+    expiry = add_time(minutes, hours, days).strftime("%Y-%m-%d %H:%M:%S")
 
     conn = sqlite3.connect(DB)
     c = conn.cursor()
     c.execute("INSERT INTO keys VALUES (?, ?, '')", (key, expiry))
-    conn.commit()
-    conn.close()
-
-    return redirect("/panel")
-
-# ================= DELETE KEY =================
-@app.route("/delete")
-def delete():
-    if not session.get("admin"):
-        return redirect("/")
-
-    key = request.args.get("key")
-
-    conn = sqlite3.connect(DB)
-    c = conn.cursor()
-    c.execute("DELETE FROM keys WHERE key=?", (key,))
     conn.commit()
     conn.close()
 
@@ -209,22 +314,31 @@ def api_login():
     row = c.fetchone()
 
     if not row:
-        return {"status": "error", "msg": "Invalid key"}
+        return {"status":"error","msg":"Invalid key"}
 
-    expiry, saved_hwid = row
+    expiry, saved = row
 
-    if datetime.datetime.strptime(expiry, "%Y-%m-%d") < datetime.datetime.now():
-        return {"status": "error", "msg": "Expired"}
+    try:
+        if datetime.datetime.strptime(expiry, "%Y-%m-%d %H:%M:%S") < datetime.datetime.now():
+            return {"status":"error","msg":"Expired"}
+    except:
+        return {"status":"error","msg":"Bad expiry"}
 
-    if saved_hwid and saved_hwid != hwid:
-        return {"status": "error", "msg": "HWID mismatch"}
+    if saved and saved != hwid:
+        return {"status":"error","msg":"HWID mismatch"}
 
-    if not saved_hwid:
+    if not saved:
         c.execute("UPDATE keys SET hwid=? WHERE key=?", (hwid, key))
         conn.commit()
 
     conn.close()
-    return {"status": "success", "msg": "Login OK"}
+    return {"status":"success","msg":"OK"}
+
+# ================= LOGOUT =================
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect("/")
 
 # ================= RUN =================
 if __name__ == "__main__":
