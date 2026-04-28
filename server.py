@@ -1,15 +1,17 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template_string
 import sqlite3
 import datetime
+import random
+import string
+import os
 
 app = Flask(__name__)
 DB = "auth.db"
 
-# ================== DATABASE ==================
+# ================= DB =================
 def init_db():
     conn = sqlite3.connect(DB)
     c = conn.cursor()
-
     c.execute("""
     CREATE TABLE IF NOT EXISTS keys (
         key TEXT PRIMARY KEY,
@@ -17,107 +19,108 @@ def init_db():
         hwid TEXT
     )
     """)
-
     conn.commit()
     conn.close()
 
 init_db()
 
-# ================== ROUTES ==================
+# ================= GEN KEY =================
+def gen_key(prefix):
+    return prefix + "-" + ''.join(random.choices(string.ascii_uppercase + string.digits, k=10))
 
-# test server
+# ================= WEB PANEL =================
+PANEL = """
+<body style="background:#0f172a;color:white;font-family:sans-serif;">
+<h2>🔑 KEY GENERATOR</h2>
+
+<form method="POST" action="/create">
+Prefix: <input name="prefix"><br><br>
+Days: <input name="days"><br><br>
+<button>Create Key</button>
+</form>
+
+<hr>
+
+<h3>Keys</h3>
+<table border="1" cellpadding="5">
+<tr><th>Key</th><th>Expiry</th><th>HWID</th></tr>
+{% for k in keys %}
+<tr>
+<td>{{k[0]}}</td>
+<td>{{k[1]}}</td>
+<td>{{k[2]}}</td>
+</tr>
+{% endfor %}
+</table>
+</body>
+"""
+
 @app.route("/")
-def home():
-    return "Auth Server OK"
-
-# LOGIN
-@app.route("/login", methods=["POST"])
-def login():
-    data = request.json
-
-    if not data:
-        return jsonify({"status": "error", "message": "Thiếu dữ liệu"})
-
-    user_key = data.get("key")
-    hwid = data.get("hwid")
-
-    if not user_key or not hwid:
-        return jsonify({"status": "error", "message": "Thiếu key hoặc hwid"})
-
+def panel():
     conn = sqlite3.connect(DB)
     c = conn.cursor()
+    c.execute("SELECT * FROM keys")
+    keys = c.fetchall()
+    conn.close()
+    return render_template_string(PANEL, keys=keys)
 
-    c.execute("SELECT expiry, hwid FROM keys WHERE key=?", (user_key,))
-    row = c.fetchone()
-
-    if not row:
-        return jsonify({"status": "error", "message": "Key không tồn tại"})
-
-    expiry, saved_hwid = row
-
-    # check hết hạn
-    if datetime.datetime.strptime(expiry, "%Y-%m-%d") < datetime.datetime.now():
-        return jsonify({"status": "error", "message": "Key hết hạn"})
-
-    # check HWID
-    if saved_hwid:
-        if saved_hwid != hwid:
-            return jsonify({"status": "error", "message": "Sai HWID"})
-    else:
-        # lưu HWID lần đầu
-        c.execute("UPDATE keys SET hwid=? WHERE key=?", (hwid, user_key))
-        conn.commit()
-
-    return jsonify({"status": "success", "message": "Login thành công"})
-
-# CREATE KEY
+# ================= CREATE KEY =================
 @app.route("/create", methods=["POST"])
 def create():
-    data = request.json
+    prefix = request.form.get("prefix")
+    days = int(request.form.get("days", 1))
 
-    if not data:
-        return jsonify({"status": "error", "message": "Thiếu dữ liệu"})
-
-    key = data.get("key")
-    days = int(data.get("days", 1))
-
-    if not key:
-        return jsonify({"status": "error", "message": "Thiếu key"})
-
+    key = gen_key(prefix)
     expiry = (datetime.datetime.now() + datetime.timedelta(days=days)).strftime("%Y-%m-%d")
 
     conn = sqlite3.connect(DB)
     c = conn.cursor()
+    c.execute("INSERT INTO keys VALUES (?, ?, '')", (key, expiry))
+    conn.commit()
+    conn.close()
 
-    try:
-        c.execute("INSERT INTO keys (key, expiry, hwid) VALUES (?, ?, '')", (key, expiry))
-        conn.commit()
-        return jsonify({
-            "status": "success",
-            "key": key,
-            "expiry": expiry
-        })
-    except:
-        return jsonify({"status": "error", "message": "Key đã tồn tại"})
+    return jsonify({"status": "success", "key": key, "expiry": expiry})
 
-# CHECK KEY (tuỳ chọn)
-@app.route("/check", methods=["POST"])
-def check():
+# ================= LOGIN API =================
+@app.route("/login", methods=["POST"])
+def login():
     data = request.json
     key = data.get("key")
+    hwid = data.get("hwid")
+
+    if not key or not hwid:
+        return jsonify({"status": "error", "msg": "Missing data"})
 
     conn = sqlite3.connect(DB)
     c = conn.cursor()
 
-    c.execute("SELECT expiry FROM keys WHERE key=?", (key,))
+    c.execute("SELECT expiry, hwid FROM keys WHERE key=?", (key,))
     row = c.fetchone()
 
     if not row:
-        return jsonify({"status": "error", "message": "Key không tồn tại"})
+        return jsonify({"status": "error", "msg": "Invalid key"})
 
-    expiry = row[0]
-    return jsonify({"status": "success", "expiry": expiry})
+    expiry, saved_hwid = row
 
-# ================== RUN ==================
+    # check expiry
+    try:
+        if datetime.datetime.strptime(expiry, "%Y-%m-%d") < datetime.datetime.now():
+            return jsonify({"status": "error", "msg": "Expired key"})
+    except:
+        return jsonify({"status": "error", "msg": "Bad expiry"})
+
+    # HWID check
+    if saved_hwid and saved_hwid != hwid:
+        return jsonify({"status": "error", "msg": "HWID mismatch"})
+
+    if not saved_hwid:
+        c.execute("UPDATE keys SET hwid=? WHERE key=?", (hwid, key))
+        conn.commit()
+
+    conn.close()
+    return jsonify({"status": "success", "msg": "Login OK"})
+
+# ================= RUN =================
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host="0.0.0.0", port=port)
