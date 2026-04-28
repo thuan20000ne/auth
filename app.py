@@ -27,7 +27,7 @@ init_db()
 
 # ================= ADMIN =================
 ADMIN_USER = "admin"
-ADMIN_PASS = "123"
+ADMIN_PASS = "@Anh2011"
 
 # ================= GEN KEY =================
 def gen_key(prefix):
@@ -307,4 +307,3 @@ def api_login():
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
-    
