@@ -64,119 +64,41 @@ LOGIN = """
 
 # ================= PANEL =================
 PANEL = """
-<!DOCTYPE html>
-<html>
-<head>
-<title>Pro Panel</title>
-<style>
-body {
-    margin:0;
-    font-family: Arial;
-    background: radial-gradient(circle at top, #050816, #000);
-    color:white;
-}
+<body style="background:#050816;color:white;font-family:sans-serif;">
 
-.sidebar {
-    position:fixed;
-    width:220px;
-    height:100vh;
-    background:rgba(10,15,40,0.85);
-    padding:20px;
-}
+<h2>🌌 AUTH DASHBOARD</h2>
 
-.sidebar h2 {color:#00f0ff;}
+<a href="/logout" style="color:red;">Logout</a>
 
-.sidebar a {
-    display:block;
-    color:white;
-    padding:10px;
-    margin-top:10px;
-    text-decoration:none;
-}
+<hr>
 
-.sidebar a:hover {background:#00f0ff33;}
-
-.main {
-    margin-left:240px;
-    padding:20px;
-}
-
-h1 {color:#00f0ff;}
-
-.card {
-    display:inline-block;
-    background:rgba(255,255,255,0.05);
-    padding:15px;
-    margin:10px;
-    border-radius:12px;
-    width:160px;
-    text-align:center;
-}
-
-input {
-    padding:10px;
-    margin:5px;
-    border:none;
-    border-radius:8px;
-    background:#111827;
-    color:white;
-}
-
-button {
-    padding:10px 15px;
-    background:linear-gradient(90deg,#00f0ff,#0066ff);
-    border:none;
-    border-radius:8px;
-    cursor:pointer;
-    font-weight:bold;
-}
-
-table {
-    width:100%;
-    margin-top:20px;
-    border-collapse:collapse;
-    background:rgba(255,255,255,0.03);
-}
-
-th {background:#00f0ff22;padding:10px;}
-td {padding:10px;border-bottom:1px solid #222;}
-
-.delete {color:red;}
-</style>
-</head>
-
-<body>
-
-<div class="sidebar">
-<h2>🌌 ADMIN</h2>
-<a href="/panel">Dashboard</a>
-<a href="/logout">Logout</a>
+<div>
+<h3>Stats</h3>
+Total: {{stats[0]}} |
+Used: {{stats[1]}} |
+Free: {{stats[2]}}
 </div>
 
-<div class="main">
+<hr>
 
-<h1>🚀 PRO AUTH SYSTEM</h1>
-
-<div class="card">TOTAL<br>{{stats[0]}}</div>
-<div class="card">USED<br>{{stats[1]}}</div>
-<div class="card">FREE<br>{{stats[2]}}</div>
-
-<h2>➕ Create Key</h2>
+<h3>Create Key</h3>
 <form method="POST" action="/create">
-<input name="prefix" placeholder="Prefix (VIP/PRO)">
+<input name="prefix" placeholder="Prefix">
 <input name="days" placeholder="Days">
 <button>Create</button>
 </form>
 
-<h2>🔍 Search</h2>
+<hr>
+
+<h3>Search</h3>
 <form method="GET">
 <input name="q" placeholder="Search key">
 <button>Search</button>
 </form>
 
-<h2>🔑 Keys</h2>
+<hr>
 
-<table>
+<table border="1" cellpadding="5">
 <tr>
 <th>Key</th>
 <th>Expiry</th>
@@ -189,28 +111,26 @@ td {padding:10px;border-bottom:1px solid #222;}
 <td>{{k[0]}}</td>
 <td>{{k[1]}}</td>
 <td>{{k[2]}}</td>
-<td><a class="delete" href="/delete?key={{k[0]}}">DELETE</a></td>
+<td><a href="/delete?key={{k[0]}}" style="color:red;">Delete</a></td>
 </tr>
 {% endfor %}
 
 </table>
 
-</div>
-
 </body>
-</html>
 """
 
 # ================= LOGIN WEB =================
 @app.route("/", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
-        if request.form["user"] == ADMIN_USER and request.form["pass"] == ADMIN_PASS:
+        if request.form.get("user") == ADMIN_USER and request.form.get("pass") == ADMIN_PASS:
             session["admin"] = True
             return redirect("/panel")
+
     return LOGIN
 
-# ================= PANEL =================
+# ================= PANEL (PROTECTED) =================
 @app.route("/panel")
 def panel():
     if not session.get("admin"):
@@ -242,6 +162,9 @@ def logout():
 # ================= CREATE KEY =================
 @app.route("/create", methods=["POST"])
 def create():
+    if not session.get("admin"):
+        return redirect("/")
+
     prefix = request.form.get("prefix")
     days = int(request.form.get("days", 1))
 
@@ -307,3 +230,4 @@ def api_login():
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
+    
