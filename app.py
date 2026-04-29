@@ -7,7 +7,7 @@ import os
 
 app = Flask(__name__)
 app.secret_key = "secret123"
-DB = "/var/data/auth.db"
+DB = "auth.db"
 
 # ================= DB =================
 def init_db():
